@@ -1,7 +1,14 @@
 ----------------------------------------------------------------------------------
--- Engineer: 
+-- Engineer: Onur CELEBI
 -- Create Date: 09.09.2022 14:21:47
--- Design Name: 
+-- Design Name: UART TX module with clk wizard vio block memort generator and ila 
+-- vio generates input data for UART TX 
+-- UART TX output write data block memory
+-- we want to control block memory with ila
+-- clk wizars generates two clk signal fast and slow 
+-- fast one is 40 MHz slow is 8 MHz 
+-- vio and ila use fast clk block memort and UART TX use slow clk
+-- UART TX module done clk divider process on the own module.
 ----------------------------------------------------------------------------------
 
 
