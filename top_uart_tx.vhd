@@ -1,155 +1,153 @@
---uart tx module--
+----------------------------------------------------------------------------------
+-- Engineer: 
+-- Create Date: 09.09.2022 14:21:47
+-- Design Name: 
+----------------------------------------------------------------------------------
+
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
-entity uart_tx is
 
-    Port (i_clk         :        in std_logic                           ;
-          i_tx_data     :        in std_logic_vector (7 downto 0)       ;
-          i_rst         :        in std_logic                           ;
-          i_start_byte  :        in std_logic                           ;
-          o_tx_reg      :        out std_logic_vector (7 downto 0)      ;
-          o_tx          :        out std_logic)                         ;
+-------------------------top module in / out port define----------------------
+entity top_new is
+
+    Port (top_i_rst               :    in       std_logic                         ;
+          top_i_start_byte        :    in       std_logic                         ;
+          top_o_tx                :    out      std_logic                         ;
+          top_clk                 :    in       std_logic)                        ;
+         
+end top_new;
+------------------------------------------------------------------------------
+
+
+architecture Behavioral of top_new is
+
+
+----------------------------------signal assignment---------------------------
+signal clk_slow                          :       std_logic                                       ;
+signal clk_fast                          :       std_logic                                       ;
+signal s_top_i_tx_data                   :       std_logic_vector(7 downto 0)                    ;
+signal wea                               :       std_logic                          :='1'        ;
+signal ena                               :       std_logic                          :='1'        ;
+signal address                           :       std_logic_vector (3 downto 0)     := "1111"     ;
+signal top_o_tx_reg                      :       std_logic_vector (7 downto 0)                   ;
+signal top_o_tx_reg_block_out            :       std_logic_vector (7 downto 0)                   ;
+signal memory_out                        :       std_logic_vector (7 downto 0)                   ;
+--signal s_top_o_tx                        :       std_logic                                       ;
+------------------------------------------------------------------------------
+
+
+--------------------------------------uart tx---------------------------------
+component uart_tx is
+
+    Port (i_clk             :               in std_logic                            ;
+          i_tx_data         :               in std_logic_vector (7 downto 0)        ;
+          i_rst             :               in std_logic                            ;
+          i_start_byte      :               in std_logic                            ;
+          o_tx_reg          :               out std_logic_vector (7 downto 0)       ;
+          o_tx              :               out std_logic)                          ;
           
-end uart_tx;
+end component;
+-------------------------------------------------------------------------------
 
-architecture Behavioral of uart_tx is
 
-signal clk_counter      :       integer range 0 to 105                  ;
-signal d_clk            :       std_logic := '0'                        ;
-signal control          :       integer   := 104                        ;
-signal clk_divider      :       integer range 0 to 3                    ;
-signal s_i_tx_data      :       std_logic_vector (7 downto 0)           ;  
-signal s_i_start_byte   :       std_logic                               ;
-signal s_o_tx           :       std_logic:='0'                          ;
-type state is (idle, start, data, stop)                                 ;
-signal uart_txx         :       state                                   ;
-signal i                :       integer :=  0                           ;
-signal s_o_tx_reg       :       std_logic_vector (7 downto 0)           ;
+---------------------------------vio-------------------------------------------
+COMPONENT vio_0
+  PORT (
+    clk                     :               IN STD_LOGIC                            ;
+    probe_out0              :               OUT STD_LOGIC_VECTOR(7 DOWNTO 0))       ;
+END COMPONENT;
+-------------------------------------------------------------------------------
+
+
+---------------------------------clk wizard------------------------------------
+component clk_wiz_1
+port
+ (-- Clock in ports
+  -- Clock out ports
+  clk_out1_8MHz             :               out    std_logic                        ;
+  clk_out2_40MHz            :               out    std_logic                        ;
+  clk_in1                   :               in     std_logic)                       ;
+end component;
+-------------------------------------------------------------------------------
+
+
+----------------------------------memory---------------------------------------
+COMPONENT blk_mem_gen_0
+  PORT (
+    clka                    :               IN STD_LOGIC                            ;
+    ena                     :               IN STD_LOGIC                            ;
+    wea                     :               IN STD_LOGIC_VECTOR(0 DOWNTO 0)         ;
+    addra                   :               IN STD_LOGIC_VECTOR(3 DOWNTO 0)         ;
+    dina                    :               IN STD_LOGIC_VECTOR(7 DOWNTO 0)         ;
+    douta                   :               OUT STD_LOGIC_VECTOR(7 DOWNTO 0))       ;
+END COMPONENT;
+-------------------------------------------------------------------------------
+
+
+-----------------------------------ila-----------------------------------------
+COMPONENT ila_0
+PORT (
+	clk                    :                IN STD_LOGIC                            ;
+	probe0                 :                IN STD_LOGIC_VECTOR(7 DOWNTO 0))        ;
+END COMPONENT  ;
+-------------------------------------------------------------------------------
 
 
 begin
 
-process (i_clk) begin
 
-    if rising_edge(i_clk) then
-        if clk_divider = 3 then 
+-------------------------------uart tx port map--------------------------------
+tx : uart_tx port map (
 
-            d_clk           <=      not d_clk        ;
-            clk_divider     <=      0                ;
-
-        else 
-
-            clk_divider     <=      clk_divider + 1  ;
-
-        end if;
-    
-    end if;
-
-end process;
+i_clk                   =>          clk_slow                        ,
+i_tx_data               =>          s_top_i_tx_data                 ,
+i_rst                   =>          top_i_rst                       ,
+i_start_byte            =>          top_i_start_byte                ,
+o_tx_reg                =>          top_o_tx_reg                    ,
+o_tx                    =>          top_o_tx)                       ;
+------------------------------------------------------------------------------
 
 
-process (d_clk, i_rst, i_tx_data, i_start_byte, s_o_tx) begin
-
-      
-
-if rising_edge(d_clk) then 
-    o_tx                    <=          s_o_tx                  ;                
-    s_i_tx_data             <=          i_tx_data               ;      
-    s_i_start_byte          <=          i_start_byte            ;
-    o_tx_reg                <=          s_o_tx_reg              ;
-    
-    if i_rst = '1' then
-
-        clk_counter         <=          0                       ;
-        o_tx                <=          '0'                     ;
-        s_i_start_byte      <=          '1'                     ;
-        i                   <=          0                       ;
-        uart_txx            <=          idle                    ;
-        s_o_tx              <=          '0'                     ;
-        
-    else 
-
-        case uart_txx is 
-
-                when idle =>    if  s_i_start_byte      =      '1'              then 
-
-                                    uart_txx            <=      start               ;
-                                    clk_counter         <=      0                   ;
-                                    s_o_tx              <=      '0'                 ;
-
-                                else
-                                    
-                                    s_o_tx              <=      '1'                 ;
-                                    uart_txx            <=      idle                ;
-
-                                end if; 
+---------------------------------clk wizard port map--------------------------
+clk : clk_wiz_1
+   port map ( 
+  -- Clock out ports  
+   clk_out1_8MHz        =>          clk_slow                        ,
+   clk_out2_40MHz       =>          clk_fast                        ,
+   -- Clock in port
+   clk_in1              =>          top_clk)                        ;
+-------------------------------------------------------------------------------
 
 
-                when start =>   if  clk_counter         >=      control  then
-
-                                    s_o_tx              <=     '0'                   ;
-                                    clk_counter         <=      0                    ;
-                                    uart_txx            <=      data                 ;
-                                    s_i_start_byte      <=      '0'                  ;
- 
-                                else
-
-                                    clk_counter         <=      clk_counter + 1     ;
-                                    s_o_tx              <=      '1'                 ;
-
-                                end if; 
+-------------------------------vio por map-------------------------------------
+VIO : vio_0
+  PORT MAP (
+    clk                 =>          clk_fast                        ,
+    probe_out0          =>          s_top_i_tx_data)                ;
+---------------------------------------------------------------------------------
 
 
-                when data =>    if  clk_counter      >=      control    then 
-
-                                    if i             <       7           then
-
-                                       i             <=      i   +   1              ;
-                                       clk_counter   <=      0                      ;
-                                       s_o_tx        <=      '0'                    ;
-
-                                    else
-
-                                        i            <=      0                      ;
-                                        uart_txx     <=      stop                   ;
-                                        clk_counter  <=      0                      ;
-
-                                    end if;
-
-                                else
-
-                                    s_o_tx           <=      s_i_tx_data(i)         ;
-                                    s_o_tx_reg (i)   <=      s_o_tx                 ;
-                                    clk_counter      <=      clk_counter +1         ;
-
-                                end if;
+-------------------------------ila port map--------------------------------------
+ila : ila_0
+PORT MAP (
+	clk                 =>          clk_fast                        ,
+	probe0              =>          memory_out)                     ;
+----------------------------------------------------------------------------------
 
 
-                when stop =>    if clk_counter       >=      control then 
+--------------------------------memory port map-----------------------------------
+memory : blk_mem_gen_0
+  PORT MAP (
+    clka                =>          clk_slow                        ,
+    ena                 =>          ena                             ,
+    wea(0)              =>          wea                             ,
+    addra               =>          address                         ,
+    dina                =>          top_o_tx_reg                    ,
+    douta               =>          memory_out)                     ;
+-----------------------------------------------------------------------------------
 
-                                    s_o_tx           <=      '1'                    ;
-                                    clk_counter      <=      0                      ;
-                                    uart_txx         <=      idle                   ;
-                                    s_i_start_byte   <=      '0'                    ;
-
-                                else
-
-                                    clk_counter      <=      clk_counter + 1        ;
-                                    s_i_start_byte   <=      '0'                    ;
-                                    s_o_tx           <=      '1'                    ;
-
-                                end if;
-
-
-                when others =>
-
-       end case;
-    end if;
-end if;
-
-end process;
 
 end Behavioral;
