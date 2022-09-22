@@ -35,7 +35,6 @@ signal address                           :       std_logic_vector (3 downto 0)  
 signal top_o_tx_reg                      :       std_logic_vector (7 downto 0)                   ;
 signal top_o_tx_reg_block_out            :       std_logic_vector (7 downto 0)                   ;
 signal memory_out                        :       std_logic_vector (7 downto 0)                   ;
---signal s_top_o_tx                        :       std_logic                                       ;
 ------------------------------------------------------------------------------
 
 
